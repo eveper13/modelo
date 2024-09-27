@@ -41,6 +41,24 @@ def load_data():
 def filter_negative_reviews(data):
     return data[data['sentiment_label'] == 'negative']
 
+# Función para detectar patrones de insatisfacción
+def detect_dissatisfaction_patterns(data):
+    # Definir palabras clave relacionadas con las quejas en inglés
+    keywords = {
+        'Falta de opciones de comida': ['few options', 'no options', 'lack of variety', 'limited options', 'not enough choices'],
+        'Servicio lento': ['slow', 'took a long time', 'delayed', 'long wait'],
+        'Falta de personal': ['few staff', 'lack of employees', 'not enough staff'],
+        'Problemas de entrega': ['poor delivery service', 'late delivery', 'delivery problems']
+    }
+    
+    dissatisfaction_counts = {key: 0 for key in keywords.keys()}
+    
+    for key, phrases in keywords.items():
+        for phrase in phrases:
+            dissatisfaction_counts[key] += data['text'].str.contains(phrase, case=False, na=False).sum()
+    
+    return dissatisfaction_counts
+
 # Función para mostrar reseñas negativas por ciudad
 def show_negative_reviews_by_city(city, data):
     city_negative_reviews = data[data['city'] == city]
@@ -73,6 +91,21 @@ def show_negative_reviews_by_city(city, data):
     # Mostrar ejemplos de reseñas negativas
     st.write(f"Reseñas Negativas para {top_restaurant} en {city}")
     st.write(limited_reviews[['name', 'text']])
+
+    # Mostrar patrones de insatisfacción
+    dissatisfaction_counts = detect_dissatisfaction_patterns(city_negative_reviews)
+    st.write("Patrones de insatisfacción detectados:")
+    
+    # Graficar patrones de insatisfacción
+    dissatisfaction_df = pd.DataFrame(list(dissatisfaction_counts.items()), columns=['Patrón', 'Cantidad'])
+    
+    # Graficar patrones de insatisfacción
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x='Cantidad', y='Patrón', data=dissatisfaction_df, palette='viridis', ax=ax)
+    ax.set_title('Patrones de Insatisfacción Detectados')
+    ax.set_xlabel('Cantidad de Quejas')
+    ax.set_ylabel('Patrón')
+    st.pyplot(fig)
 
 # Interfaz de usuario principal
 def main():
